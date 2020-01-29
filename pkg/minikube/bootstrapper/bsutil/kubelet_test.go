@@ -18,6 +18,7 @@ limitations under the License.
 package bsutil
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/pmezard/go-difflib/difflib"
@@ -28,28 +29,35 @@ import (
 )
 
 func TestGenerateKubeletConfig(t *testing.T) {
-	tests := []struct {
+	var tests []struct {
 		description string
 		cfg         config.MachineConfig
 		expected    string
 		shouldErr   bool
-	}{
-		{
-			description: "old docker",
-			cfg: config.MachineConfig{
-				KubernetesConfig: config.KubernetesConfig{
-					KubernetesVersion: constants.OldestKubernetesVersion,
-					ContainerRuntime:  "docker",
-				},
-				Nodes: []config.Node{
-					config.Node{
-						IP:           "192.168.1.100",
-						Name:         "minikube",
-						ControlPlane: true,
+	}
+	if runtime.GOARCH == "amd64" {
+		tests = []struct {
+			description string
+			cfg         config.MachineConfig
+			expected    string
+			shouldErr   bool
+		}{
+			{
+				description: "old docker",
+				cfg: config.MachineConfig{
+					KubernetesConfig: config.KubernetesConfig{
+						KubernetesVersion: constants.OldestKubernetesVersion,
+						ContainerRuntime:  "docker",
+					},
+					Nodes: []config.Node{
+						config.Node{
+							IP:           "192.168.1.100",
+							Name:         "minikube",
+							ControlPlane: true,
+						},
 					},
 				},
-			},
-			expected: `[Unit]
+				expected: `[Unit]
 Wants=docker.socket
 
 [Service]
@@ -58,23 +66,23 @@ ExecStart=/var/lib/minikube/binaries/v1.11.10/kubelet --allow-privileged=true --
 
 [Install]
 `,
-		},
-		{
-			description: "newest cri runtime",
-			cfg: config.MachineConfig{
-				KubernetesConfig: config.KubernetesConfig{
-					KubernetesVersion: constants.NewestKubernetesVersion,
-					ContainerRuntime:  "cri-o",
-				},
-				Nodes: []config.Node{
-					config.Node{
-						IP:           "192.168.1.100",
-						Name:         "minikube",
-						ControlPlane: true,
+			},
+			{
+				description: "newest cri runtime",
+				cfg: config.MachineConfig{
+					KubernetesConfig: config.KubernetesConfig{
+						KubernetesVersion: constants.NewestKubernetesVersion,
+						ContainerRuntime:  "cri-o",
+					},
+					Nodes: []config.Node{
+						config.Node{
+							IP:           "192.168.1.100",
+							Name:         "minikube",
+							ControlPlane: true,
+						},
 					},
 				},
-			},
-			expected: `[Unit]
+				expected: `[Unit]
 Wants=crio.service
 
 [Service]
@@ -83,23 +91,23 @@ ExecStart=/var/lib/minikube/binaries/v1.17.2/kubelet --authorization-mode=Webhoo
 
 [Install]
 `,
-		},
-		{
-			description: "default containerd runtime",
-			cfg: config.MachineConfig{
-				KubernetesConfig: config.KubernetesConfig{
-					KubernetesVersion: constants.DefaultKubernetesVersion,
-					ContainerRuntime:  "containerd",
-				},
-				Nodes: []config.Node{
-					config.Node{
-						IP:           "192.168.1.100",
-						Name:         "minikube",
-						ControlPlane: true,
+			},
+			{
+				description: "default containerd runtime",
+				cfg: config.MachineConfig{
+					KubernetesConfig: config.KubernetesConfig{
+						KubernetesVersion: constants.DefaultKubernetesVersion,
+						ContainerRuntime:  "containerd",
+					},
+					Nodes: []config.Node{
+						config.Node{
+							IP:           "192.168.1.100",
+							Name:         "minikube",
+							ControlPlane: true,
+						},
 					},
 				},
-			},
-			expected: `[Unit]
+				expected: `[Unit]
 Wants=containerd.service
 
 [Service]
@@ -108,30 +116,30 @@ ExecStart=/var/lib/minikube/binaries/v1.17.2/kubelet --authorization-mode=Webhoo
 
 [Install]
 `,
-		},
-		{
-			description: "default containerd runtime with IP override",
-			cfg: config.MachineConfig{
-				KubernetesConfig: config.KubernetesConfig{
-					KubernetesVersion: constants.DefaultKubernetesVersion,
-					ContainerRuntime:  "containerd",
-					ExtraOptions: config.ExtraOptionSlice{
-						config.ExtraOption{
-							Component: Kubelet,
-							Key:       "node-ip",
-							Value:     "192.168.1.200",
+			},
+			{
+				description: "default containerd runtime with IP override",
+				cfg: config.MachineConfig{
+					KubernetesConfig: config.KubernetesConfig{
+						KubernetesVersion: constants.DefaultKubernetesVersion,
+						ContainerRuntime:  "containerd",
+						ExtraOptions: config.ExtraOptionSlice{
+							config.ExtraOption{
+								Component: Kubelet,
+								Key:       "node-ip",
+								Value:     "192.168.1.200",
+							},
+						},
+					},
+					Nodes: []config.Node{
+						config.Node{
+							IP:           "192.168.1.100",
+							Name:         "minikube",
+							ControlPlane: true,
 						},
 					},
 				},
-				Nodes: []config.Node{
-					config.Node{
-						IP:           "192.168.1.100",
-						Name:         "minikube",
-						ControlPlane: true,
-					},
-				},
-			},
-			expected: `[Unit]
+				expected: `[Unit]
 Wants=containerd.service
 
 [Service]
@@ -140,24 +148,24 @@ ExecStart=/var/lib/minikube/binaries/v1.17.2/kubelet --authorization-mode=Webhoo
 
 [Install]
 `,
-		},
-		{
-			description: "docker with custom image repository",
-			cfg: config.MachineConfig{
-				KubernetesConfig: config.KubernetesConfig{
-					KubernetesVersion: constants.DefaultKubernetesVersion,
-					ContainerRuntime:  "docker",
-					ImageRepository:   "docker-proxy-image.io/google_containers",
-				},
-				Nodes: []config.Node{
-					config.Node{
-						IP:           "192.168.1.100",
-						Name:         "minikube",
-						ControlPlane: true,
+			},
+			{
+				description: "docker with custom image repository",
+				cfg: config.MachineConfig{
+					KubernetesConfig: config.KubernetesConfig{
+						KubernetesVersion: constants.DefaultKubernetesVersion,
+						ContainerRuntime:  "docker",
+						ImageRepository:   "docker-proxy-image.io/google_containers",
+					},
+					Nodes: []config.Node{
+						config.Node{
+							IP:           "192.168.1.100",
+							Name:         "minikube",
+							ControlPlane: true,
+						},
 					},
 				},
-			},
-			expected: `[Unit]
+				expected: `[Unit]
 Wants=docker.socket
 
 [Service]
@@ -166,9 +174,150 @@ ExecStart=/var/lib/minikube/binaries/v1.17.2/kubelet --authorization-mode=Webhoo
 
 [Install]
 `,
-		},
-	}
+			},
+		}
+	} else {
+		tests = []struct {
+			description string
+			cfg         config.MachineConfig
+			expected    string
+			shouldErr   bool
+		}{
+			{
+				description: "old docker",
+				cfg: config.MachineConfig{
+					KubernetesConfig: config.KubernetesConfig{
+						KubernetesVersion: constants.OldestKubernetesVersion,
+						ContainerRuntime:  "docker",
+					},
+					Nodes: []config.Node{
+						config.Node{
+							IP:           "192.168.1.100",
+							Name:         "minikube",
+							ControlPlane: true,
+						},
+					},
+				},
+				expected: `[Unit]
+Wants=docker.socket
 
+[Service]
+ExecStart=
+ExecStart=/var/lib/minikube/binaries/v1.11.10/kubelet --allow-privileged=true --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cadvisor-port=0 --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --pod-manifest-path=/etc/kubernetes/manifests
+
+[Install]
+`,
+			},
+			{
+				description: "newest cri runtime",
+				cfg: config.MachineConfig{
+					KubernetesConfig: config.KubernetesConfig{
+						KubernetesVersion: constants.NewestKubernetesVersion,
+						ContainerRuntime:  "cri-o",
+					},
+					Nodes: []config.Node{
+						config.Node{
+							IP:           "192.168.1.100",
+							Name:         "minikube",
+							ControlPlane: true,
+						},
+					},
+				},
+				expected: `[Unit]
+Wants=crio.service
+
+[Service]
+ExecStart=
+ExecStart=/var/lib/minikube/binaries/v1.17.2/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=remote --container-runtime-endpoint=/var/run/crio/crio.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=/var/run/crio/crio.sock --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
+
+[Install]
+`,
+			},
+			{
+				description: "default containerd runtime",
+				cfg: config.MachineConfig{
+					KubernetesConfig: config.KubernetesConfig{
+						KubernetesVersion: constants.DefaultKubernetesVersion,
+						ContainerRuntime:  "containerd",
+					},
+					Nodes: []config.Node{
+						config.Node{
+							IP:           "192.168.1.100",
+							Name:         "minikube",
+							ControlPlane: true,
+						},
+					},
+				},
+				expected: `[Unit]
+Wants=containerd.service
+
+[Service]
+ExecStart=
+ExecStart=/var/lib/minikube/binaries/v1.17.2/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=remote --container-runtime-endpoint=unix:///run/containerd/containerd.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=unix:///run/containerd/containerd.sock --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
+
+[Install]
+`,
+			},
+			{
+				description: "default containerd runtime with IP override",
+				cfg: config.MachineConfig{
+					KubernetesConfig: config.KubernetesConfig{
+						KubernetesVersion: constants.DefaultKubernetesVersion,
+						ContainerRuntime:  "containerd",
+						ExtraOptions: config.ExtraOptionSlice{
+							config.ExtraOption{
+								Component: Kubelet,
+								Key:       "node-ip",
+								Value:     "192.168.1.200",
+							},
+						},
+					},
+					Nodes: []config.Node{
+						config.Node{
+							IP:           "192.168.1.100",
+							Name:         "minikube",
+							ControlPlane: true,
+						},
+					},
+				},
+				expected: `[Unit]
+Wants=containerd.service
+
+[Service]
+ExecStart=
+ExecStart=/var/lib/minikube/binaries/v1.17.2/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=remote --container-runtime-endpoint=unix:///run/containerd/containerd.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=unix:///run/containerd/containerd.sock --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.200 --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
+
+[Install]
+`,
+			},
+			{
+				description: "docker with custom image repository",
+				cfg: config.MachineConfig{
+					KubernetesConfig: config.KubernetesConfig{
+						KubernetesVersion: constants.DefaultKubernetesVersion,
+						ContainerRuntime:  "docker",
+						ImageRepository:   "docker-proxy-image.io/google_containers",
+					},
+					Nodes: []config.Node{
+						config.Node{
+							IP:           "192.168.1.100",
+							Name:         "minikube",
+							ControlPlane: true,
+						},
+					},
+				},
+				expected: `[Unit]
+Wants=docker.socket
+
+[Service]
+ExecStart=
+ExecStart=/var/lib/minikube/binaries/v1.17.2/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --pod-infra-container-image=docker-proxy-image.io/google_containers/pause-` + runtime.GOARCH + `:3.1 --pod-manifest-path=/etc/kubernetes/manifests
+
+[Install]
+`,
+			},
+		}
+	}
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			runtime, err := cruntime.New(cruntime.Config{Type: tc.cfg.KubernetesConfig.ContainerRuntime,
