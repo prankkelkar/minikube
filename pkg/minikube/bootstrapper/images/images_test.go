@@ -36,7 +36,7 @@ func TestAuxiliary(t *testing.T) {
 
 func TestAuxiliaryMirror(t *testing.T) {
 	want := []string{
-		"test.mirror/storage-provisioner:v1.8.1",
+		"test.mirror/storage-provisioner-s390x:v1.8.1",
 		"test.mirror/dashboard:v2.0.0-beta8",
 		"test.mirror/metrics-scraper:v1.0.2",
 	}
