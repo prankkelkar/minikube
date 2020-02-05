@@ -49,7 +49,7 @@ func TestKubeadmImages(t *testing.T) {
 			"mirror.k8s.io/coredns-s390x:1.6.2",
 			"mirror.k8s.io/etcd-s390x:3.3.15-0",
 			"mirror.k8s.io/pause-s390x:3.1",
-			"mirror.k8s.io/storage-provisioner:v1.8.1",
+			"mirror.k8s.io/storage-provisioner-s390x:v1.8.1",
 			"mirror.k8s.io/dashboard:v2.0.0-beta8",
 			"mirror.k8s.io/metrics-scraper:v1.0.2",
 		}},
