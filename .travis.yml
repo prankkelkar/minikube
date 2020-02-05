@@ -10,7 +10,7 @@ env:
 matrix:
   include:
     - language: go
-      arch: s390x
+      arch: arm64
       name: Code Lint
       go: 1.13.4
       env:
@@ -20,7 +20,7 @@ matrix:
       script: make test
 
     - language: go
-      arch: s390x 
+      arch: arm64 
       name: Unit Test
       go: 1.13.4
       env:
@@ -30,12 +30,13 @@ matrix:
       script: make test
 
     - language: go
-      arch: s390x
+      arch: arm64
       name: Build
       go: 1.13.4
       script: make
 
     - language: go
+      arch: ppc64le
       name: Code Lint
       go: 1.13.4
       env:
@@ -45,6 +46,7 @@ matrix:
       script: make test
 
     - language: go
+      arch: ppc64le 
       name: Unit Test
       go: 1.13.4
       env:
@@ -54,9 +56,11 @@ matrix:
       script: make test
 
     - language: go
+      arch: ppc64le
       name: Build
       go: 1.13.4
       script: make
+
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 travisBuddy:
